@@ -1,0 +1,119 @@
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./index.css" />
+    <script type="text/javascript" src="https://vuejs.org/js/vue.min.js"></script>
+    <title>灰度图片</title>
+</head>
+
+<body>
+    <div id="app">
+        <div class="text-center">
+            <h1>灰度图片</h1>
+            <div>
+                <button @click="toGray">转化</button>
+            </div>
+            <div style="margin: 24px 0">
+                <button icon="ios-cloud-upload-outline" type="primary" @click="$refs.input.click()">上传图片</button>
+                <button icon="ios-cloud-download-outline" type="primary" @click="downloadImage">下载图片</button>
+                <input type="file" ref="input" @change="uploadImage" style="display: none;" />
+            </div>
+            <div>
+                <!-- 原图 -->
+                <canvas id="origin" :width="width" :height="height" v-show="image"></canvas>
+                <!-- 灰度图片 -->
+                <canvas id="new" :width="width" :height="height" v-show="image"></canvas>
+            </div>
+        </div>
+    </div>
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                width: '', // canvas宽
+                height: '', // canvas高
+                image: null, //
+            },
+            methods: {
+                // 选择不同模式
+                toGray() {
+                    if (!this.image) {
+                        alert('请选择图片')
+                        return;
+                    }
+                    setTimeout(() => {
+                        this.drawImage();
+                    }, 17);
+                },
+
+                // 下载图片
+                downloadImage(image, name) {
+                    if (!this.image) {
+                        alert('请选择图片')
+                        return;
+                    }
+                    var image = new Image();
+                    var canvas = document.getElementById('new');
+                    image.src = canvas.toDataURL();
+                    this.downLoad(image, 'gray.jpg');
+                },
+                // 下载
+                downLoad(image, name) {
+                    const dataURL = image.src;
+                    const link = document.createElement('a');
+                    link.download = name;
+                    link.href = dataURL;
+                    link.dispatchEvent(new MouseEvent('click'));
+                },
+                // 上传图片
+                uploadImage(e) {
+                    var that = this;
+                    var file = e.target.files[0];
+                    if (typeof FileReader === 'undefined') {
+                        alert('您的浏览器不支持图片上传，请升级您的浏览器');
+                        return false;
+                    }
+                    var image = new Image();
+                    image.onload = function () {
+                        that.width = image.width; 
+                        that.height = image.height;
+                        that.image = image;
+                        that.$nextTick(() => {
+                            that.drawOriginImage(image);
+                        })
+                    };
+
+                    let reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = e => {
+                        image.src = e.target.result;
+                    };
+                },
+                drawOriginImage(image) {
+                    var canvasOrigin = document.getElementById('origin');
+                    var ctxOrigin = canvasOrigin.getContext('2d');
+                    ctxOrigin.drawImage(image, 0, 0, image.width, image.height);
+                },
+                drawImage() {
+                    var canvasOrigin = document.getElementById('origin');
+                    var ctxOrigin = canvasOrigin.getContext('2d');
+                    var canvasNew = document.getElementById('new');
+                    var ctxNew = canvasNew.getContext('2d');
+                    var imageData = ctxOrigin.getImageData(0, 0, this.width, this.height);
+                    var data = imageData.data; // 获取原始图像每一个像素
+                    this.chooseFilter(data);
+                    ctxNew.putImageData(imageData, 0, 0);
+                },
+                chooseFilter(data) {
+                    for (var i = 0; i < data.length; i += 4) {
+                        var grey = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                        data[i] = data[i + 1] = data[i + 2] = grey;
+                    }
+                },
+            },
+        });
+    </script>
+</body>
+
+</html>
